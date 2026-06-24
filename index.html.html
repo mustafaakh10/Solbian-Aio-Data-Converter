@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solbian AIO Data Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #c31432 0%, #240b36 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #c31432 0%, #240b36 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .drop-zone {
+            border: 3px dashed #c31432;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fff5f7;
+        }
+
+        .drop-zone:hover {
+            border-color: #a00d28;
+            background: #ffe8ed;
+        }
+
+        .drop-zone.dragover {
+            border-color: #a00d28;
+            background: #ffd9e0;
+            transform: scale(1.02);
+        }
+
+        .drop-zone-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone-text {
+            font-size: 18px;
+            color: #c31432;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .drop-zone-hint {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .status {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .file-info {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .file-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .file-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .file-info-value {
+            color: #6c757d;
+        }
+
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            display: none;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #c31432 0%, #240b36 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(195, 20, 50, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #c31432;
+            border: 2px solid #c31432;
+        }
+
+        .btn-secondary:hover {
+            background: #fff5f7;
+        }
+
+        .preview {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .preview-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #dee2e6;
+            color: #6c757d;
+        }
+
+        tbody tr:hover {
+            background: #fff5f7;
+        }
+
+        .footer {
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #c31432;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔌 Solbian AIO Data Converter</h1>
+            <p>Convert binary telemetry files to CSV format</p>
+        </div>
+
+        <div class="content">
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-icon">📁</div>
+                <div class="drop-zone-text">Drop your AIO_data.bin file here</div>
+                <div class="drop-zone-hint">or click to browse</div>
+            </div>
+            <input type="file" id="fileInput" class="file-input" accept=".bin">
+
+            <div class="status" id="status"></div>
+
+            <div class="file-info" id="fileInfo"></div>
+
+            <div class="actions" id="actions">
+                <button class="btn btn-primary" id="downloadBtn">
+                    <span>⬇️</span> Download CSV
+                </button>
+                <button class="btn btn-secondary" id="resetBtn">
+                    <span>🔄</span> Convert Another File
+                </button>
+            </div>
+
+            <div class="preview" id="preview">
+                <div class="preview-header">Preview (first 100 rows)</div>
+                <div class="table-container" id="tableContainer"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Solbian Display Firmware V5 © 2026
+        </div>
+    </div>
+
+    <script>
+        // Charge mode and profile mappings
+        const CHARGE_MODES = {
+            0: "Bulk",
+            1: "Equalize",
+            2: "Absorption",
+            3: "Float",
+            5: "Off"
+        };
+
+        const CHARGE_PROFILES = {
+            0: "Profile_1",
+            1: "Profile_2",
+            2: "Profile_3",
+            3: "Custom"
+        };
+
+        let convertedData = null;
+        let csvContent = null;
+
+        // DOM elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById('status');
+        const fileInfo = document.getElementById('fileInfo');
+        const actions = document.getElementById('actions');
+        const preview = document.getElementById('preview');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // File drop handling
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        // Handle file processing
+        async function handleFile(file) {
+            if (!file.name.endsWith('.bin')) {
+                showStatus('error', 'Please select a .bin file');
+                return;
+            }
+
+            showStatus('info', 'Processing file...');
+            fileInfo.style.display = 'none';
+            actions.style.display = 'none';
+            preview.style.display = 'none';
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const dataView = new DataView(arrayBuffer);
+                
+                // Parse header (12 bytes)
+                const magic = dataView.getUint32(0, true);
+                const version = dataView.getUint8(4);
+                const recordCountHeader = dataView.getUint32(8, true);
+
+                // Validate magic number
+                if (magic !== 0x534F4C42) {
+                    throw new Error(`Invalid file format (magic: 0x${magic.toString(16)})`);
+                }
+
+                if (version !== 1) {
+                    throw new Error(`Unsupported version: ${version}`);
+                }
+
+                // Parse records (read until end of file, not relying on header count)
+                const records = [];
+                let offset = 12; // Start after header
+                let recordCount = 0;
+
+                // Calculate actual number of records from file size
+                const availableBytes = arrayBuffer.byteLength - 12;
+                const maxRecords = Math.floor(availableBytes / 60);
+
+                for (let i = 0; i < maxRecords; i++) {
+                    if (offset + 60 > arrayBuffer.byteLength) break;
+                    const record = parseRecord(dataView, offset);
+                    if (record) {
+                        records.push(record);
+                        recordCount++;
+                    }
+                    offset += 60;
+                }
+
+                convertedData = records;
+                
+                // Generate CSV
+                csvContent = generateCSV(records);
+
+                // Show results
+                showFileInfo(file, recordCountHeader, recordCount);
+                showStatus('success', `✓ Successfully converted ${recordCount} records`);
+                actions.style.display = 'flex';
+                showPreview(records);
+
+            } catch (error) {
+                showStatus('error', `Error: ${error.message}`);
+                console.error('Conversion error:', error);
+            }
+        }
+
+        // Parse a single 60-byte record
+        function parseRecord(dataView, offset) {
+            try {
+                // Read timestamp (4 bytes, little-endian)
+                const timestamp = dataView.getUint32(offset, true);
+                
+                // Read device ID (32 bytes, null-terminated string)
+                let deviceId = '';
+                for (let i = 0; i < 32; i++) {
+                    const byte = dataView.getUint8(offset + 4 + i);
+                    if (byte === 0) break;
+                    deviceId += String.fromCharCode(byte);
+                }
+
+                // Read floats (4 bytes each, little-endian)
+                const power = dataView.getFloat32(offset + 36, true);
+                const current = dataView.getFloat32(offset + 40, true);
+                const energy = dataView.getFloat32(offset + 44, true);
+                const batteryVoltage = dataView.getFloat32(offset + 48, true);
+
+                // Read charge mode and profile (1 byte each)
+                const chargeMode = dataView.getUint8(offset + 52);
+                const chargeProfile = dataView.getUint8(offset + 53);
+
+                return {
+                    timestamp,
+                    deviceId,
+                    power,
+                    current,
+                    energy,
+                    batteryVoltage,
+                    chargeMode,
+                    chargeProfile
+                };
+            } catch (error) {
+                console.error('Error parsing record at offset', offset, error);
+                return null;
+            }
+        }
+
+        // Convert timestamp to readable date (UTC interpretation)
+        function formatTimestamp(timestamp) {
+            try {
+                const date = new Date(timestamp * 1000);
+                const year = date.getUTCFullYear();
+                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(date.getUTCDate()).padStart(2, '0');
+                const hours = String(date.getUTCHours()).padStart(2, '0');
+                const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+                const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            } catch (error) {
+                return 'Invalid';
+            }
+        }
+
+        // Generate CSV content
+        function generateCSV(records) {
+            let csv = 'Timestamp,DateTime,DeviceID,Power_W,Current_A,Energy_Wh,BatteryVoltage_V,ChargeMode,ChargeProfile\n';
+            
+            for (const record of records) {
+                const dateTime = formatTimestamp(record.timestamp);
+                const chargeModeName = CHARGE_MODES[record.chargeMode] || `Unknown_${record.chargeMode}`;
+                const chargeProfileName = CHARGE_PROFILES[record.chargeProfile] || `Unknown_${record.chargeProfile}`;
+                
+                csv += `${record.timestamp},${dateTime},${record.deviceId},`;
+                csv += `${record.power.toFixed(2)},${record.current.toFixed(2)},${record.energy.toFixed(2)},`;
+                csv += `${record.batteryVoltage.toFixed(2)},${chargeModeName},${chargeProfileName}\n`;
+            }
+            
+            return csv;
+        }
+
+        // Show file information
+        function showFileInfo(file, headerCount, actualCount) {
+            const fileSize = (file.size / 1024).toFixed(2);
+            fileInfo.innerHTML = `
+                <div class="file-info-item">
+                    <span class="file-info-label">File Name:</span>
+                    <span class="file-info-value">${file.name}</span>
+                </div>
+                <div class="file-info-item">
+                    <span class="file-info-label">File Size:</span>
+                    <span class="file-info-value">${fileSize} KB</span>
+                </div>
+                <div class="file-info-item">
+                    <span class="file-info-label">Records (Header):</span>
+                    <span class="file-info-value">${headerCount}</span>
+                </div>
+                <div class="file-info-item">
+                    <span class="file-info-label">Records (Actual):</span>
+                    <span class="file-info-value">${actualCount}</span>
+                </div>
+            `;
+            fileInfo.style.display = 'block';
+        }
+
+        // Show status message
+        function showStatus(type, message) {
+            status.className = `status ${type}`;
+            status.textContent = message;
+            status.style.display = 'block';
+        }
+
+        // Show data preview
+        function showPreview(records) {
+            const previewCount = Math.min(100, records.length);
+            const previewRecords = records.slice(0, previewCount);
+
+            let tableHTML = '<table><thead><tr>';
+            tableHTML += '<th>Timestamp</th><th>DateTime</th><th>Device ID</th>';
+            tableHTML += '<th>Power (W)</th><th>Current (A)</th><th>Energy (Wh)</th>';
+            tableHTML += '<th>Voltage (V)</th><th>Mode</th><th>Profile</th>';
+            tableHTML += '</tr></thead><tbody>';
+
+            for (const record of previewRecords) {
+                const dateTime = formatTimestamp(record.timestamp);
+                const chargeModeName = CHARGE_MODES[record.chargeMode] || `Unknown_${record.chargeMode}`;
+                const chargeProfileName = CHARGE_PROFILES[record.chargeProfile] || `Unknown_${record.chargeProfile}`;
+
+                tableHTML += '<tr>';
+                tableHTML += `<td>${record.timestamp}</td>`;
+                tableHTML += `<td>${dateTime}</td>`;
+                tableHTML += `<td>${record.deviceId}</td>`;
+                tableHTML += `<td>${record.power.toFixed(2)}</td>`;
+                tableHTML += `<td>${record.current.toFixed(2)}</td>`;
+                tableHTML += `<td>${record.energy.toFixed(2)}</td>`;
+                tableHTML += `<td>${record.batteryVoltage.toFixed(2)}</td>`;
+                tableHTML += `<td>${chargeModeName}</td>`;
+                tableHTML += `<td>${chargeProfileName}</td>`;
+                tableHTML += '</tr>';
+            }
+
+            tableHTML += '</tbody></table>';
+            document.getElementById('tableContainer').innerHTML = tableHTML;
+            preview.style.display = 'block';
+        }
+
+        // Download CSV
+        downloadBtn.addEventListener('click', () => {
+            if (!csvContent) return;
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'AIO_data.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus('success', '✓ CSV file downloaded successfully');
+        });
+
+        // Reset
+        resetBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            convertedData = null;
+            csvContent = null;
+            status.style.display = 'none';
+            fileInfo.style.display = 'none';
+            actions.style.display = 'none';
+            preview.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
